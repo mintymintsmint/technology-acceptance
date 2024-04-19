@@ -13,6 +13,70 @@ knitr::opts_chunk$set(echo = TRUE)
 
 
 ```{r data}
-data <- read.csv("C:/Users/laura/Documents/AI/technology-acceptance/data/data_tastudents.csv")
+#install.packages("here")
+library(here)
+here()
+data <- read.csv2(here("data", "data_tastudents.csv"), encoding="UTF-8", fileEncoding="latin1")
+```
+I have read in the data after having manually deleted unnecessary columns via Excel (time spent per page, and so on.)
+
+```{r dimensions}
+dim(data)
+str(data)
 ```
 
+```{r NA}
+anyNA(data) # no initial NA values
+
+for (i in 1:nrow(data)) { # loop through all rows and columns to replace empty values that are coded as -9 as actual NA that are recognized by R
+  for (j in 1:ncol(data)) {
+    if (data[i, j] == -9) {
+      data[i, j] <- NA
+    }
+  }
+}
+```
+
+```{r}
+anyNA(data)
+colSums(is.na(data))
+```
+One person didn't select what type of degree they are pursuing, two people did not select their gender and one person did not disclose their age. Since I cannot afford to lose their other replies, I will add an extra level "other" to these three columns. First, of course, I have to change the class of the columns to factors first.
+
+```{r column_names}
+colnames(data)[1] <- "ID"
+colnames(data)
+```
+First, I changed the name of the first column to ID, since the name seems to have gotten corrupted during the import process.
+
+```{r}
+str(data)
+```
+```{r}
+data$AD01 <- factor(data$AD01)
+data$AD02 <- factor(data$AD02)
+data$AD03 <- factor(data$AD03)
+data$AU01_01 <- factor(data$AU01_01)
+data$AU01_02 <- factor(data$AU01_02)
+data$AU01_03 <- factor(data$AU01_03)
+data$AU02 <- factor(data$AU02)
+data$DE02 <- factor(data$DE02)
+data$DE03 <- factor(data$DE03)
+
+str(data)
+```
+ 
+Now I will treat the missing data that was previously found. NA are in the columns AD02, DE02 and DE03
+
+```{r}
+levels(data$AD02) <- c(levels(data$AD02), "Other")
+levels(data$DE02) <- c(levels(data$DE02), "Other")
+levels(data$DE03) <- c(levels(data$DE03), "Other")
+
+data$AD02[is.na(data$AD02)] <- "Other"
+data$DE02[is.na(data$DE02)] <- "Other"
+data$DE03[is.na(data$DE03)] <- "Other"
+
+colSums(is.na(data))
+```
+The missing data has been successfully dealt with.
