@@ -103,19 +103,21 @@ p_load(RColorBrewer, # color pallets
 ```
 
 ```{r voluntariness}
-ggplot(data, aes(VU) ) +
-  geom_histogram(na.rm = T,
-      colour = "dodgerblue4",  # contour color
-      fill   = "forestgreen",  # fill/insides color
-      bins  = 40) +  
-  labs(y = "Frequency",
-       x = "Voluntariness of Moodle Use",
-      caption = "Data: umfrage.up",
-      title = "Histogram of the Voluntariness of Moodle Use") + 
-  theme(plot.title    = element_text(color = "royalblue4", hjust = 0.5,
+plot_vol <- ggplot(data, aes(VU) ) +
+              geom_histogram(na.rm = T,
+                             colour = "dodgerblue4",  # contour color
+                             fill   = "forestgreen",  # fill/insides color
+                             bins  = 40) +  
+              xlim(1,5) +
+              ylim(0,15) +
+              labs(y = "Frequency",
+                   x = "Voluntariness of Moodle Use",
+                   caption = "Data: umfrage.up",
+                   title = "Histogram of the Voluntariness of Moodle Use") + 
+              theme(plot.title    = element_text(color = "royalblue4", hjust = 0.5,
                                      size = 12, face = "bold"),
-        plot.caption  = element_text(face = "italic")  # text formatting
-        )
+              plot.caption  = element_text(face = "italic")  # text formatting
+              )
 ```
 Almost half of all participants say that use of Moodle is mandated, which means that for the investigation between academic discipline and technology acceptance, using the variable "actual use of Moodle" is not helpful as students can not choose to not use it. This means that high usage can't indicate high acceptance. Instead, I will use perceived ease of use and perceived usefulness. I will also not use behavioral intention to use Moodle since this too is influenced by the lack of voluntariness. 
 
@@ -127,17 +129,17 @@ data$AD03 <- factor(data$AD03,
                     labels = c("Computer Science","Economics","Educational and Cognitive Sciences","Humanities, Cultural Sciences and Theology","Law","Mathematics","Natural Sciences","Psychology","Social Sciences","Sports and Health Science")
                     )
 
-ggplot(data, aes(x = AD03, fill = AD03)) + 
-    geom_bar(position = "dodge") + # elements one next to the other
-    labs(title = "Distribution of Academic Discpline",
-         x = "Academic Discipline",
-         y = "Count") +
-    scale_x_discrete(labels = label_wrap(10)) +
-    scale_fill_brewer(palette = "Set3") +
-    theme(plot.title    = element_text(color = "royalblue4", 
-                                       size = 12, face = "bold"),
-          plot.caption  = element_text(face = "italic")
-          )
+plot_ad_dis <- ggplot(data, aes(x = AD03, fill = AD03)) + 
+                geom_bar(position = "dodge") + # elements one next to the other
+                labs(title = "Distribution of Academic Discpline",
+                     x = "Academic Discipline",
+                     y = "Count") +
+                scale_x_discrete(labels = label_wrap(10)) +
+                scale_fill_brewer(palette = "Set3") +
+                theme(plot.title    = element_text(color = "royalblue4", 
+                                                   size = 12, face = "bold"),
+                plot.caption  = element_text(face = "italic")
+                )
 ```
 ```{r}
 hist1 <- ggplot(data, aes(PE) ) +
@@ -145,6 +147,7 @@ hist1 <- ggplot(data, aes(PE) ) +
                            colour = "dodgerblue4",  # contour color
                            fill   = "forestgreen",  # fill/insides color
                            bins  = 25) +  # alternatively use: binwidth = <width>
+            xlim(1,5) +
             labs(y = "Frequency",
                  x = "Perceived Ease of Use",
                  caption = "Data: umfrage.up",
@@ -159,6 +162,7 @@ hist2 <- ggplot(data, aes(PU) ) +
                            colour = "dodgerblue4",  # contour color
                            fill   = "forestgreen",  # fill/insides color
                            bins  = 25) +  # alternatively use: binwidth = <width>
+            xlim(1,5) +
             labs(y = "Frequency",
                  x = "Perceived Usefulness",
                  caption = "Data: umfrage.up",
@@ -171,46 +175,116 @@ hist2 <- ggplot(data, aes(PU) ) +
 plot_grid(hist1, hist2, ncol = 2)  # cowplot package
 ```
 ```{r fig.width=12}
-ggplot(data, aes(x = AD03, y = PE, fill = AD03) )+
-  geom_boxplot(coef = 2,  # length of whiskers
-               #notch = T, # If TRUE, make a notched box plot. Notches are used to
-                          # compare groups / medians
-               notchwidth = 0.5,
-               outlier.stroke = 0.7,  # boldness of outliers 
-               outlier.size   = 1,      
-               outlier.colour = "coral2",  
-               outlier.shape  = 25  # 25 - triangles, nice shape
-               ) +
-  scale_x_discrete(labels = label_wrap(10)) +
-  scale_color_brewer(type = "qual", palette = 2) +
-  labs(title = "Perceived Ease of Use by Academic Discipline",
-       x = "Academic Discipline",
-       y = "Perceived Ease of Use",
-       caption = "Data: umfrage.up") +
-       theme(plot.title    = element_text(color = "royalblue4", size = 12, face = "bold"),
-             plot.caption  = element_text(face = "italic")
-             )
+plot_AD_PE <- ggplot(data, aes(x = AD03, y = PE, fill = AD03) )+
+                geom_boxplot(coef = 2,  # length of whiskers
+                             notchwidth = 0.5,
+                             outlier.stroke = 0.7,  # boldness of outliers 
+                             outlier.size   = 1,      
+                             outlier.colour = "coral2",  
+                             outlier.shape  = 25  # 25 - triangles, nice shape
+                             ) +
+                ylim(1,5) +
+                scale_x_discrete(labels = label_wrap(10)) +
+                scale_color_brewer(type = "qual", palette = 2) +
+                labs(title = "Perceived Ease of Use by Academic Discipline",
+                     x = "Academic Discipline",
+                     y = "Perceived Ease of Use",
+                     caption = "Data: umfrage.up") +
+                theme(plot.title    = element_text(color = "royalblue4", size = 12, face = "bold"),
+                      plot.caption  = element_text(face = "italic")
+                      )
 ```
 
 ```{r PU, fig.width=12}
-ggplot(data, aes(x = AD03, y = PU, fill = AD03) )+
-  geom_boxplot(coef = 2,  # length of whiskers
-               #notch = T, # If TRUE, make a notched box plot. Notches are used to
-                          # compare groups / medians
-               notchwidth = 0.5,
-               outlier.stroke = 0.7,  # boldness of outliers 
-               outlier.size   = 1,      
-               outlier.colour = "coral2",  
-               outlier.shape  = 25  # 25 - triangles, nice shape
-               ) +
-  scale_x_discrete(labels = label_wrap(10)) +
-  scale_color_brewer(type = "qual", palette = 3) +
-  labs(title = "Perceived Usefulness by Academic Discipline",
-       x = "Academic Discipline",
-       y = "Perceived Usefulness",
-       caption = "Data: umfrage.up") +
-       theme(plot.title    = element_text(color = "royalblue4", size = 12, face = "bold"),
-             plot.caption  = element_text(face = "italic")
-             )
+plot_AD_PU <- ggplot(data, aes(x = AD03, y = PU, fill = AD03) )+
+                geom_boxplot(coef = 2,  # length of whiskers
+                             notchwidth = 0.5,
+                             outlier.stroke = 0.7,  # boldness of outliers 
+                             outlier.size   = 1,      
+                             outlier.colour = "coral2",  
+                             outlier.shape  = 25  # 25 - triangles, nice shape
+                             ) +
+                ylim(1,5) +
+                scale_x_discrete(labels = label_wrap(10)) +
+                scale_color_brewer(type = "qual", palette = 3) +
+                labs(title = "Perceived Usefulness by Academic Discipline",
+                     x = "Academic Discipline",
+                     y = "Perceived Usefulness",
+                     caption = "Data: umfrage.up") +
+                theme(plot.title    = element_text(color = "royalblue4", size = 12, face = "bold"),
+                      plot.caption  = element_text(face = "italic")
+                      )
 ```
-TODO: Average PE / PU by academic discipline, Übersichtstabelle mit allen aufgenommenen Werten a la summary(data), Hypothesenvalidierung, alle figures abspeichern            
+TODO: Average PE / PU by academic discipline, Übersichtstabelle mit allen aufgenommenen Werten a la summary(data), Hypothesenvalidierung, alle figures abspeichern     
+
+```{r fig.width=8}
+PE_mean <- aggregate(PE~AD03, data = data, mean)
+PE_mean <- PE_mean[order(PE_mean$PE),]
+PE_mean
+
+PU_mean <- aggregate(PU~AD03, data = data, mean)
+PU_mean <- PU_mean[order(PU_mean$PU),]
+PU_mean
+
+plot_AD_avgPE <- ggplot(PE_mean, aes(x = AD03, y = PE)) +
+                  geom_point(na.rm = T) +
+                  ylim(1,5) +
+                  scale_x_discrete(limits = c("Mathematics","Educational and Cognitive Sciences","Humanities, Cultural Sciences and Theology","Economics","Social Sciences","Psychology","Computer Science","Natural Sciences","Law"),
+                                   labels = label_wrap(10)) +
+                  labs(title = "Average Perceived Ease of Use by Academic Discipline",
+                       x = "Academic Discipline",
+                       y = "Average Perceived Ease of use",
+                       caption = "Data: umfrage.up") +
+                  theme(plot.title    = element_text(color = "royalblue4", size = 12, face = "bold"),
+                        plot.caption  = element_text(face = "italic")
+                        )
+
+plot_AD_avgPU <- ggplot(PU_mean, aes(x = AD03, y = PU)) +
+                  geom_point(na.rm = T) +
+                  ylim(0,5) +
+                  scale_x_discrete(limits = c("Humanities, Cultural Sciences and Theology","Social Sciences","Economics","Natural Sciences","Mathematics","Educational and Cognitive Sciences","Computer Science","Law","Psychology"),
+                                   labels = label_wrap(10)) +
+                  labs(title = "Average Perceived Usefulness by Academic Discipline",
+                       x = "Academic Discipline",
+                       y = "Average Perceived Usefulness",
+                       caption = "Data: umfrage.up") +
+                  theme(plot.title    = element_text(color = "royalblue4", size = 12, face = "bold"),
+                        plot.caption  = element_text(face = "italic")
+                        )
+```
+Now we investigate the relationship between average PE and PU pe academic discipline.
+```{r}
+AD_PE_PU <- aggregate(PE~AD03, data = data, mean)
+PU_temp <- aggregate(PU~AD03, data = data, mean)
+AD_PE_PU$PU <- PU_temp$PU
+
+plot_PE_PU <- ggplot(AD_PE_PU, aes(x = PE, y = PU)) +
+                geom_point(na.rm = T) +  # a layer of points
+                geom_smooth(na.rm = T,
+                            method = "lm",   # linear model
+                            se = F,
+                            colour = "coral3",
+                            show.legend = T) + 
+                labs(title = "Relationship between Average Perceived Ease of Use and Average Perceived Usefulness",
+                     caption = "Data: umfrage.up",
+                     x = "Perceived Ease of Use",
+                     y = "Perceived Usefulness") +
+                theme(plot.title = element_text(color = "royalblue4", size = 10, face = "bold"),
+                      plot.caption  = element_text(face = "italic"))
+```
+
+
+Now I will save the figures in a separate "results" folder.
+
+```{r}
+ggsave("histPE.png", plot = hist1, path = here("results"))
+ggsave("histPU.png", plot = hist2, path = here("results"))
+ggsave("plot_AD_avgPE.png", plot = plot_AD_avgPE, path = here("results"))
+ggsave("plot_AD_avgPU.png", plot = plot_AD_avgPU, path = here("results"))
+ggsave("plot_ad_dis.png", plot = plot_ad_dis, path = here("results"), width = 12)
+ggsave("plot_AD_PE.png", plot = plot_AD_PE, path = here("results"), width = 12)
+ggsave("plot_AD_PU.png", plot = plot_AD_PU, path = here("results"), width = 12)
+ggsave("plot_PE_PU.png", plot = plot_PE_PU, path = here("results"))
+ggsave("plot_vol.png", plot = plot_vol, path = here("results"))
+```
+
