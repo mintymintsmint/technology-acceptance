@@ -98,7 +98,8 @@ p_load(RColorBrewer, # color pallets
        ggplot2,      # prettier graphs 
        cowplot,      # arranges ggplot graphs nicely
        moments,       # for calculating skeweness
-       scales
+       scales,
+       car
        )
 ```
 
@@ -215,7 +216,7 @@ plot_AD_PU <- ggplot(data, aes(x = AD03, y = PU, fill = AD03) )+
                       plot.caption  = element_text(face = "italic")
                       )
 ```
-TODO: Average PE / PU by academic discipline, Übersichtstabelle mit allen aufgenommenen Werten a la summary(data), Hypothesenvalidierung, alle figures abspeichern     
+   
 
 ```{r fig.width=8}
 PE_mean <- aggregate(PE~AD03, data = data, mean)
@@ -286,5 +287,67 @@ ggsave("plot_AD_PE.png", plot = plot_AD_PE, path = here("results"), width = 12)
 ggsave("plot_AD_PU.png", plot = plot_AD_PU, path = here("results"), width = 12)
 ggsave("plot_PE_PU.png", plot = plot_PE_PU, path = here("results"))
 ggsave("plot_vol.png", plot = plot_vol, path = here("results"))
+```
+To test hypothesis 1, I will use one-way ANOVA PE and PU are continuous dependent variables. There is one independent variable and it is categorical with 10 levels - academic discipline. According to this website (https://tales.nmc.unibas.ch/de/conducting-psychological-research-6/statistics-and-analyses-22/which-test-for-which-hypothesis-71), this means I use one-way ANOVA on PE and PU separately.The requirement is that the dependent variable is normally distributed in every level and that these normal populations have common variance which can be tested using Levene's test.
+
+```{r}
+PE.aov <- aov(PE ~ AD03, data = data)
+summary(PE.aov)
+PU.aov <- aov(PU ~ AD03, data = data)
+summary(PU.aov)
+AT.aov <- aov(AT ~ AD03, data = data)
+summary(AT.aov)
+BI.aov <- aov(BI ~ AD03, data = data)
+summary(BI.aov)
+
+leveneTest(PE ~ AD03, data = data)
+leveneTest(PU ~ AD03, data = data)
+leveneTest(AT ~ AD03, data = data)
+leveneTest(BI ~ AD03, data = data)
+```
+
+Since the p-values are above 0.05 for each model, the homogeneity of variances can be assumed.
+
+```{r}
+PE.res <- residuals(object = PE.aov)
+PU.res <- residuals(object = PU.aov)
+AT.res <- residuals(object = AT.aov)
+BI.res <- residuals(object = BI.aov)
+
+shapiro.test(x = PE.res)
+shapiro.test(x = PU.res)
+shapiro.test(x = AT.res)
+shapiro.test(x = BI.res)
+```
+According to the Shapiro-Wilk normality test, it can be assumed that the normality requirement is not violated.
+
+This means that the one-way ANOVA can be applied here and this also means that there is no indication that there is a statistical significance between PE, PU, AT and BI and academic discipline.
+
+This is from here: http://www.sthda.com/english/wiki/one-way-anova-test-in-r
+
+TODO: hypothesis 2
+
+```{r}
+summary(data)
+```
+
+```{r}
+plot_BI_VU <- ggplot(data, aes(x = BI, y = VU)) +  # label = Name
+                geom_point(na.rm = T) +  # a layer of points
+                ylim(1,5) + 
+                xlim(1,5) +
+                geom_smooth(na.rm = T,
+                            method = "lm",   # linear model
+                            se = F,
+                            colour = "green4",
+                            show.legend = T) + 
+                labs(title = "Non-Linear Relationship between Behavioral Intention and Voluntariness of Moodle Use",
+                     caption = "Data: umfrage.up",
+                     x = "Behavioral Intention",
+                     y = "Voluntariness") +
+                theme(plot.title = element_text(color = "darkgreen", size = 10, face = "bold"),
+                      plot.caption  = element_text(face = "italic"))
+
+ggsave("plot_BI_VU.png", plot = plot_BI_VU, path = here("results"))
 ```
 
