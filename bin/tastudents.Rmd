@@ -9,20 +9,22 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## Data Analysis on Students' Technology Acceptance of Moodle and Academic Discipline
+# Data Analysis on Students' Technology Acceptance of Moodle and Academic Discipline
+
+## Data Preparation
 
 
 ```{r data}
 #install.packages("here")
 library(here)
-here()
-data <- read.csv2(here("data", "data_tastudents.csv"), encoding="UTF-8", fileEncoding="latin1")
+here() 
+data <- read.csv2(here("data", "data_tastudents.csv"), encoding="UTF-8", fileEncoding="latin1") # import data
 ```
 I have read in the data after having manually deleted unnecessary columns via Excel (time spent per page, and so on.)
 
 ```{r dimensions}
-dim(data)
-str(data)
+dim(data) # make sure correct number of columns and rows were imported
+str(data) # check data types
 ```
 
 ```{r NA}
@@ -39,12 +41,12 @@ for (i in 1:nrow(data)) { # loop through all rows and columns to replace empty v
 
 ```{r}
 anyNA(data)
-colSums(is.na(data))
+colSums(is.na(data)) # check which columns contain NAs
 ```
 One person didn't select what type of degree they are pursuing, two people did not select their gender and one person did not disclose their age. Since I cannot afford to lose their other replies, I will add an extra level "other" to these three columns. First, of course, I have to change the class of the columns to factors first.
 
 ```{r column_names}
-colnames(data)[1] <- "ID"
+colnames(data)[1] <- "ID" # rename first column to ID since name got corrupted during the import process
 colnames(data)
 ```
 First, I changed the name of the first column to ID, since the name seems to have gotten corrupted during the import process.
@@ -53,6 +55,7 @@ First, I changed the name of the first column to ID, since the name seems to hav
 str(data)
 ```
 ```{r}
+# correct data types
 data$AD01 <- factor(data$AD01)
 data$AD02 <- factor(data$AD02)
 data$AD03 <- factor(data$AD03)
@@ -69,19 +72,23 @@ str(data)
 Now I will treat the missing data that was previously found. NA are in the columns AD02, DE02 and DE03
 
 ```{r}
+# add "Other" level to some factors
 levels(data$AD02) <- c(levels(data$AD02), "Other")
 levels(data$DE02) <- c(levels(data$DE02), "Other")
 levels(data$DE03) <- c(levels(data$DE03), "Other")
 
+# change NAs to "Other" value
 data$AD02[is.na(data$AD02)] <- "Other"
 data$DE02[is.na(data$DE02)] <- "Other"
 data$DE03[is.na(data$DE03)] <- "Other"
 
+# check that there are no more NAs
 colSums(is.na(data))
 ```
 The missing data has been successfully dealt with. Now I want to find the average values of attitude towards using Moodle, actual use of Moodle, behavioral intention to use Moodle, perceived ease of use, perceived usefulness and voluntariness.
 
 ```{r}
+# calculate mean of the variables and add as new column
 str(data)
 data$AT <- rowMeans(data[,5:8])
 data$BI <- rowMeans(data[,13:17])
@@ -92,6 +99,7 @@ head(data)
 ```
 Now I will plot the voluntariness of Moodle.
 ```{r}
+# use pacman to manage packages
 #install.packages("pacman", repos = "http://cran.us.r-project.org")
 library(pacman)
 p_load(RColorBrewer, # color pallets
@@ -99,11 +107,15 @@ p_load(RColorBrewer, # color pallets
        cowplot,      # arranges ggplot graphs nicely
        moments,       # for calculating skeweness
        scales,
-       car
+       car,
+       ggpubr
        )
 ```
 
+## Hypothesis 2: Voluntariness
+
 ```{r voluntariness}
+# plot to show extent of voluntariness of Moodle use to determine whether AT/BI/AU are proper variables to use for statistical testing
 plot_vol <- ggplot(data, aes(VU) ) +
               geom_histogram(na.rm = T,
                              colour = "dodgerblue4",  # contour color
@@ -115,74 +127,84 @@ plot_vol <- ggplot(data, aes(VU) ) +
                    x = "Voluntariness of Moodle Use",
                    caption = "Data: umfrage.up",
                    title = "Histogram of the Voluntariness of Moodle Use") + 
-              theme(plot.title    = element_text(color = "royalblue4", hjust = 0.5,
-                                     size = 12, face = "bold"),
+              theme(plot.title    = element_text(color = "royalblue4",
+                                     size = 16, face = "bold"),
               plot.caption  = element_text(face = "italic")  # text formatting
               )
+
+plot_vol
 ```
 Almost half of all participants say that use of Moodle is mandated, which means that for the investigation between academic discipline and technology acceptance, using the variable "actual use of Moodle" is not helpful as students can not choose to not use it. This means that high usage can't indicate high acceptance. Instead, I will use perceived ease of use and perceived usefulness. I will also not use behavioral intention to use Moodle since this too is influenced by the lack of voluntariness. 
 
-*add graph to show relationship between voluntariness and actual use / behavioral intention to use*
+## Hypothesis 1: Perceived Ease of Use and Perceived Usefulness
 
 ```{r fig.width=12}
+# add labels to make plot more understandable
 data$AD03 <- factor(data$AD03,
                     levels = c(1,2,3,4,5,6,7,8,9,10),
                     labels = c("Computer Science","Economics","Educational and Cognitive Sciences","Humanities, Cultural Sciences and Theology","Law","Mathematics","Natural Sciences","Psychology","Social Sciences","Sports and Health Science")
                     )
 
+# plot to display distribution of academic discipline among participants of study
 plot_ad_dis <- ggplot(data, aes(x = AD03, fill = AD03)) + 
-                geom_bar(position = "dodge") + # elements one next to the other
+                geom_bar(position = "dodge") + # elements next to each other
                 labs(title = "Distribution of Academic Discpline",
                      x = "Academic Discipline",
                      y = "Count") +
                 scale_x_discrete(labels = label_wrap(10)) +
                 scale_fill_brewer(palette = "Set3") +
                 theme(plot.title    = element_text(color = "royalblue4", 
-                                                   size = 12, face = "bold"),
+                                                   size = 16, face = "bold"),
                 plot.caption  = element_text(face = "italic")
                 )
+
+plot_ad_dis
 ```
 ```{r}
+# display perceived ease of use
 hist1 <- ggplot(data, aes(PE) ) +
             geom_histogram(na.rm = T,
                            colour = "dodgerblue4",  # contour color
                            fill   = "forestgreen",  # fill/insides color
-                           bins  = 25) +  # alternatively use: binwidth = <width>
+                           bins  = 25) +
             xlim(1,5) +
             labs(y = "Frequency",
                  x = "Perceived Ease of Use",
                  caption = "Data: umfrage.up",
                  title = "Histogram of Perceived Ease of Use of Moodle") +
-            theme(plot.title    = element_text(color = "royalblue4", hjust = 0.5,
-                                               size = 10, face = "bold"),
+            theme(plot.title    = element_text(color = "royalblue4",
+                                               size = 16, face = "bold"),
                   plot.caption  = element_text(face = "italic")  # text formatting
                   )
 
+# display perceived usefulness
 hist2 <- ggplot(data, aes(PU) ) +
             geom_histogram(na.rm = T,
                            colour = "dodgerblue4",  # contour color
                            fill   = "forestgreen",  # fill/insides color
-                           bins  = 25) +  # alternatively use: binwidth = <width>
+                           bins  = 25) + 
             xlim(1,5) +
             labs(y = "Frequency",
                  x = "Perceived Usefulness",
                  caption = "Data: umfrage.up",
                  title = "Histogram of Perceived Usefulness of Moodle") +
-            theme(plot.title    = element_text(color = "royalblue4", hjust = 0.5,
-                                               size = 10, face = "bold"),
+            theme(plot.title    = element_text(color = "royalblue4",
+                                               size = 16, face = "bold"),
                   plot.caption  = element_text(face = "italic")  # text formatting
                   )
 
-plot_grid(hist1, hist2, ncol = 2)  # cowplot package
+hist1
+hist2
 ```
 ```{r fig.width=12}
+# display perceived ease of use by academic discipline
 plot_AD_PE <- ggplot(data, aes(x = AD03, y = PE, fill = AD03) )+
                 geom_boxplot(coef = 2,  # length of whiskers
                              notchwidth = 0.5,
                              outlier.stroke = 0.7,  # boldness of outliers 
                              outlier.size   = 1,      
                              outlier.colour = "coral2",  
-                             outlier.shape  = 25  # 25 - triangles, nice shape
+                             outlier.shape  = 25  # triangle-shape
                              ) +
                 ylim(1,5) +
                 scale_x_discrete(labels = label_wrap(10)) +
@@ -191,12 +213,15 @@ plot_AD_PE <- ggplot(data, aes(x = AD03, y = PE, fill = AD03) )+
                      x = "Academic Discipline",
                      y = "Perceived Ease of Use",
                      caption = "Data: umfrage.up") +
-                theme(plot.title    = element_text(color = "royalblue4", size = 12, face = "bold"),
+                theme(plot.title    = element_text(color = "royalblue4", size = 16, face = "bold"),
                       plot.caption  = element_text(face = "italic")
                       )
+
+plot_AD_PE
 ```
 
 ```{r PU, fig.width=12}
+# display perceived usefulness by academic discipline
 plot_AD_PU <- ggplot(data, aes(x = AD03, y = PU, fill = AD03) )+
                 geom_boxplot(coef = 2,  # length of whiskers
                              notchwidth = 0.5,
@@ -212,34 +237,42 @@ plot_AD_PU <- ggplot(data, aes(x = AD03, y = PU, fill = AD03) )+
                      x = "Academic Discipline",
                      y = "Perceived Usefulness",
                      caption = "Data: umfrage.up") +
-                theme(plot.title    = element_text(color = "royalblue4", size = 12, face = "bold"),
+                theme(plot.title    = element_text(color = "royalblue4", size = 16, face = "bold"),
                       plot.caption  = element_text(face = "italic")
                       )
+
+plot_AD_PU
 ```
    
 
 ```{r fig.width=8}
+# collect mean PE for every academic discipline
 PE_mean <- aggregate(PE~AD03, data = data, mean)
 PE_mean <- PE_mean[order(PE_mean$PE),]
 PE_mean
 
+# collect mean PU for every academic discipline
 PU_mean <- aggregate(PU~AD03, data = data, mean)
 PU_mean <- PU_mean[order(PU_mean$PU),]
 PU_mean
 
+# display mean PE by academic discipline
 plot_AD_avgPE <- ggplot(PE_mean, aes(x = AD03, y = PE)) +
                   geom_point(na.rm = T) +
                   ylim(1,5) +
-                  scale_x_discrete(limits = c("Mathematics","Educational and Cognitive Sciences","Humanities, Cultural Sciences and Theology","Economics","Social Sciences","Psychology","Computer Science","Natural Sciences","Law"),
-                                   labels = label_wrap(10)) +
+                  scale_x_discrete(limits = c("Mathematics","Educational and Cognitive Sciences","Humanities, Cultural Sciences and Theology","Economics","Social Sciences","Psychology","Computer Science","Natural Sciences","Law"), # force certain order of academic disciplines
+                                   labels = label_wrap(10)) + # wrap names to prevent overlapping
                   labs(title = "Average Perceived Ease of Use by Academic Discipline",
                        x = "Academic Discipline",
                        y = "Average Perceived Ease of use",
                        caption = "Data: umfrage.up") +
-                  theme(plot.title    = element_text(color = "royalblue4", size = 12, face = "bold"),
+                  theme(plot.title    = element_text(color = "royalblue4", size = 16, face = "bold"),
                         plot.caption  = element_text(face = "italic")
                         )
 
+plot_AD_avgPE
+
+# display mean PU by academic discipline
 plot_AD_avgPU <- ggplot(PU_mean, aes(x = AD03, y = PU)) +
                   geom_point(na.rm = T) +
                   ylim(0,5) +
@@ -249,16 +282,20 @@ plot_AD_avgPU <- ggplot(PU_mean, aes(x = AD03, y = PU)) +
                        x = "Academic Discipline",
                        y = "Average Perceived Usefulness",
                        caption = "Data: umfrage.up") +
-                  theme(plot.title    = element_text(color = "royalblue4", size = 12, face = "bold"),
+                  theme(plot.title    = element_text(color = "royalblue4", size = 16, face = "bold"),
                         plot.caption  = element_text(face = "italic")
                         )
+
+plot_AD_avgPU
 ```
-Now we investigate the relationship between average PE and PU pe academic discipline.
+Now I will investigate the relationship between average PE and PU per academic discipline.
 ```{r}
+# create table with average PE and PU per academic discipline
 AD_PE_PU <- aggregate(PE~AD03, data = data, mean)
 PU_temp <- aggregate(PU~AD03, data = data, mean)
 AD_PE_PU$PU <- PU_temp$PU
 
+# display relationship between PE and PU
 plot_PE_PU <- ggplot(AD_PE_PU, aes(x = PE, y = PU)) +
                 geom_point(na.rm = T) +  # a layer of points
                 geom_smooth(na.rm = T,
@@ -266,12 +303,14 @@ plot_PE_PU <- ggplot(AD_PE_PU, aes(x = PE, y = PU)) +
                             se = F,
                             colour = "coral3",
                             show.legend = T) + 
-                labs(title = "Relationship between Average Perceived Ease of Use and Average Perceived Usefulness",
+                labs(title = "Relationship between Average Perceived Ease of Use and \n Average Perceived Usefulness",
                      caption = "Data: umfrage.up",
                      x = "Perceived Ease of Use",
                      y = "Perceived Usefulness") +
-                theme(plot.title = element_text(color = "royalblue4", size = 10, face = "bold"),
+                theme(plot.title = element_text(color = "royalblue4", size = 16, face = "bold"),
                       plot.caption  = element_text(face = "italic"))
+
+plot_PE_PU
 ```
 
 
@@ -288,6 +327,8 @@ ggsave("plot_AD_PU.png", plot = plot_AD_PU, path = here("results"), width = 12)
 ggsave("plot_PE_PU.png", plot = plot_PE_PU, path = here("results"))
 ggsave("plot_vol.png", plot = plot_vol, path = here("results"))
 ```
+### Hypothesis 1 Testing
+
 To test hypothesis 1, I will use one-way ANOVA PE and PU are continuous dependent variables. There is one independent variable and it is categorical with 10 levels - academic discipline. According to this website (https://tales.nmc.unibas.ch/de/conducting-psychological-research-6/statistics-and-analyses-22/which-test-for-which-hypothesis-71), this means I use one-way ANOVA on PE and PU separately.The requirement is that the dependent variable is normally distributed in every level and that these normal populations have common variance which can be tested using Levene's test.
 
 ```{r}
@@ -295,11 +336,14 @@ PE.aov <- aov(PE ~ AD03, data = data)
 summary(PE.aov)
 PU.aov <- aov(PU ~ AD03, data = data)
 summary(PU.aov)
+
+# testing AT and BI is more for insurance that I wasn't wrong to exclude it, wont be included in report
 AT.aov <- aov(AT ~ AD03, data = data)
 summary(AT.aov)
 BI.aov <- aov(BI ~ AD03, data = data)
 summary(BI.aov)
 
+# tests homogeneity of variance (assumption to use one-way ANOVA)
 leveneTest(PE ~ AD03, data = data)
 leveneTest(PU ~ AD03, data = data)
 leveneTest(AT ~ AD03, data = data)
@@ -314,6 +358,7 @@ PU.res <- residuals(object = PU.aov)
 AT.res <- residuals(object = AT.aov)
 BI.res <- residuals(object = BI.aov)
 
+# test normality (assumption to use one-way ANOVA)
 shapiro.test(x = PE.res)
 shapiro.test(x = PU.res)
 shapiro.test(x = AT.res)
@@ -325,11 +370,16 @@ This means that the one-way ANOVA can be applied here and this also means that t
 
 This is from here: http://www.sthda.com/english/wiki/one-way-anova-test-in-r
 
-```{r}
-summary(data)
-```
+## Descriptive Statistics
 
 ```{r}
+summary(data[c("AD01","AD02","AD03","DE02","DE03","AT","BI","PE","PU","VU")])
+```
+
+## Hypothesis 2: Voluntariness (cont.)
+
+```{r}
+# display relationship between voluntariness and behavioral intention
 plot_BI_VU <- ggplot(data, aes(x = BI, y = VU)) +  # label = Name
                 geom_point(na.rm = T) +  # a layer of points
                 ylim(1,5) + 
@@ -339,33 +389,44 @@ plot_BI_VU <- ggplot(data, aes(x = BI, y = VU)) +  # label = Name
                             se = F,
                             colour = "green4",
                             show.legend = T) + 
-                labs(title = "Non-Linear Relationship between Behavioral Intention and Voluntariness of Moodle Use",
+                labs(title = "Non-Linear Relationship between Behavioral Intention and \n Voluntariness of Moodle Use",
                      caption = "Data: umfrage.up",
                      x = "Behavioral Intention",
                      y = "Voluntariness") +
-                theme(plot.title = element_text(color = "darkgreen", size = 10, face = "bold"),
+                theme(plot.title = element_text(color = "darkgreen", size = 16, face = "bold"),
                       plot.caption  = element_text(face = "italic"))
+
+plot_BI_VU
 
 ggsave("plot_BI_VU.png", plot = plot_BI_VU, path = here("results"))
 ```
 
+## Hypothesis 3: Personal Ecosystems
+
 ```{r}
+# check answers for what devices / software participants use for their studies
 data$OT01_02
 ```
 
 ```{r}
+# manually add number of parts in personal ecosystem from OT01_02
 data$OT_number <- c(NA,4,NA,NA,4,1,7,2,14,3,10,6,7,9,6,5,4,14,2,1,3,7,9,4,9,6,11,2,4,12,4,2,1,14,1,4,9,4,11,2,3,1,9,1,2,11,5,11,14,3,6,9,4,5,NA,4,NA,3,4,4,6,6,5,9,2,4,2,5)
 
+# make new data frame with needed columns
 OT_data <- data[,c("ID","AT","BI","PE","PU","VU","OT_number","AD03")]
 
+# remove columns containing NAs
 OT_data_new <- na.omit(OT_data)
 
+# mean number of parts of personal ecosystems
 OT_mean <- aggregate(OT_number~AD03, data = OT_data_new, mean)
 OT_mean
 
+# one-way ANOVA test
 OT.aov <- aov(OT_number ~ AD03, data = OT_data_new)
 summary(OT.aov)
 
+# test assumptions for one-way ANOVA
 leveneTest(OT_number ~ AD03, data = OT_data_new)
 OT.res <- residuals(object = OT.aov)
 shapiro.test(x = OT.res)
@@ -373,12 +434,14 @@ shapiro.test(x = OT.res)
 I cannot use one-way ANOVA since the normality assumption is violated. The Kruskal-Wallis rank sum test can be used instead.
 
 ```{r}
+# alternative to one-way ANOVA
 kruskal.test(OT_number ~ AD03, data = OT_data_new)
 ```
 
 Since the p-value is above 0.05, it can be assumed that there is no difference in how many devices / pieces of software students use by academic discipline.
 
 ```{r}
+# display relationship between OT number and PE
 plot_OT_PE <- ggplot(OT_data_new, aes(x = OT_number, y = PE)) +
                 geom_point(na.rm = T) +
                 ylim(1,5) +
@@ -387,15 +450,16 @@ plot_OT_PE <- ggplot(OT_data_new, aes(x = OT_number, y = PE)) +
                             se = F,
                             colour = "coral3",
                             show.legend = T) + 
-                labs(title = "Relationship between Average Perceived Ease of Use and Number of Devices/Software Used",
+                labs(title = "Relationship between Average Perceived Ease of Use and \n Number of Devices/Software Used",
                      caption = "Data: umfrage.up",
                      x = "Number of Devices / Software of Personal Ecosystem",
                      y = "Perceived Ease of Use") +
-                theme(plot.title = element_text(color = "royalblue4", size = 8, face = "bold"),
+                theme(plot.title = element_text(color = "royalblue4", size = 16, face = "bold"),
                       plot.caption  = element_text(face = "italic"))
 
 plot_OT_PE
 
+# display relationship between OT numbers and PU
 plot_OT_PU <- ggplot(OT_data_new, aes(x = OT_number, y = PU)) +
                 geom_point(na.rm = T) +
                 ylim(1,5) +
@@ -404,15 +468,16 @@ plot_OT_PU <- ggplot(OT_data_new, aes(x = OT_number, y = PU)) +
                             se = F,
                             colour = "coral3",
                             show.legend = T) + 
-                labs(title = "Relationship between Average Perceived Usefulness and Number of Devices/Software Used",
+                labs(title = "Relationship between Average Perceived Usefulness and \n Number of Devices/Software Used",
                      caption = "Data: umfrage.up",
                      x = "Number of Devices / Software of Personal Ecosystem",
                      y = "Perceived Usefulness") +
-                theme(plot.title = element_text(color = "royalblue4", size = 8, face = "bold"),
+                theme(plot.title = element_text(color = "royalblue4", size = 16, face = "bold"),
                       plot.caption  = element_text(face = "italic"))
 
 plot_OT_PU
 
+# linear models for OT numbers an PE and OT numbers and PU
 OT_PE_lm <- lm(OT_number~PE, data=OT_data_new)
 summary(OT_PE_lm)
 OT_PU_lm <- lm(OT_number~PU, data=OT_data_new)
@@ -423,4 +488,34 @@ plot(OT_PE_lm$residuals, pch = 16, col = "green4")
 plot(OT_PU_lm$residuals, pch = 16, col = "green4")
 ```
 
-TODO: check assumptions for linear regression
+### Checking Assumptions for Linear Regression
+
+```{r}
+# check linearity
+plot(OT_PE_lm, 1)
+plot(OT_PU_lm, 1)
+```
+```{r}
+# independence between variables
+durbinWatsonTest(OT_PE_lm)
+durbinWatsonTest(OT_PU_lm)
+```
+
+I can't use linear regression since not all assumptions are met. 
+
+```{r}
+# normality test
+shapiro.test(OT_data_new$OT_number)
+shapiro.test(OT_data_new$PE)
+shapiro.test(OT_data_new$PU)
+```
+I also can't use Pearson correlation test since OT_number and PE are not necessarily normally distributed.
+
+```{r}
+# Kendall tau correlation test
+K.PE.res <- cor.test(OT_data_new$OT_number, OT_data_new$PE,  method="kendall")
+K.PE.res
+K.PU.res <- cor.test(OT_data_new$OT_number, OT_data_new$PU,  method="kendall")
+K.PU.res
+```
+It can be assumed that OT_number an PE, and OT_number and PU are not correlated.
