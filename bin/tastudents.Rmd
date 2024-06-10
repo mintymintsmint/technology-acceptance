@@ -59,9 +59,6 @@ str(data)
 data$AD01 <- factor(data$AD01)
 data$AD02 <- factor(data$AD02)
 data$AD03 <- factor(data$AD03)
-data$AU01_01 <- factor(data$AU01_01)
-data$AU01_02 <- factor(data$AU01_02)
-data$AU01_03 <- factor(data$AU01_03)
 data$AU02 <- factor(data$AU02)
 data$DE02 <- factor(data$DE02)
 data$DE03 <- factor(data$DE03)
@@ -69,7 +66,7 @@ data$DE03 <- factor(data$DE03)
 str(data)
 ```
  
-Now I will treat the missing data that was previously found. NA are in the columns AD02, DE02 and DE03
+Now I will treat the missing data that was previously found. NA are in the columns AD02, DE02 and DE03.
 
 ```{r}
 # add "Other" level to some factors
@@ -85,18 +82,50 @@ data$DE03[is.na(data$DE03)] <- "Other"
 # check that there are no more NAs
 colSums(is.na(data))
 ```
-The missing data has been successfully dealt with. Now I want to find the average values of attitude towards using Moodle, actual use of Moodle, behavioral intention to use Moodle, perceived ease of use, perceived usefulness and voluntariness.
+The missing data has been successfully dealt with. Now I want to find the average values of attitude towards using Moodle, actual use of Moodle, behavioral intention to use Moodle, perceived ease of use, perceived usefulness and voluntariness. First, I have to deal with two negation statements in AT and VU. I will do this by adding an extra variable for each where I switch the values. AT, for example, has three statements where a high number indicates positive attitude and one where a high number indicates negative attitude. In order to use the mean value for the testing, a high number has to indicate a positive attitude for all statements. The same applies to VU.
+
+```{r}
+# introduce  variable AT01_04R to indicate it is reworked
+data$AT01_04R[data$AT01_04 == 3] <- 3 # neither agree or disagree stays the same
+data$AT01_04R[data$AT01_04 == 2] <- 4 # disagree becomes agree
+data$AT01_04R[data$AT01_04 == 1] <- 5 # strongly disagree becomes strongly agree
+data$AT01_04R[data$AT01_04 == 4] <- 2 # agree becomes disagree
+data$AT01_04R[data$AT01_04 == 5] <- 1 # strongly agree becomes strongly disagree
+as.integer(data$AT01_04R)
+data$AT01_04R <- as.integer(data$AT01_04R)
+
+head(data) # check that values are correct
+
+# introduce  variable VU01_01R to indicate it is reworked, higher number indicates lower voluntariness
+data$VU01_01R[data$VU01_01 == 3] <- 3 # neither agree or disagree stays the same
+data$VU01_01R[data$VU01_01 == 2] <- 4 # disagree becomes agree
+data$VU01_01R[data$VU01_01 == 1] <- 5 # strongly disagree becomes strongly agree
+data$VU01_01R[data$VU01_01 == 4] <- 2 # agree becomes disagree
+data$VU01_01R[data$VU01_01 == 5] <- 1 # strongly agree becomes strongly disagree
+data$VU01_01R <- as.integer(data$VU01_01R)
+
+str(data)
+```
+
+```{r}
+data[data$AU02 == 2,]
+```
+One participant indicates he does not have the opportunity to use Moodle, but this row also contains the information that Moodle is being used by the participant at least once a week (AU01_01, AU01_02, AU01_03), which means that this is likely a misclick or a misunderstanding. The row will not be excluded.
 
 ```{r}
 # calculate mean of the variables and add as new column
 str(data)
-data$AT <- rowMeans(data[,5:8])
+data$AT <- rowMeans(data[,c(5,6,7,36)]) # use reworked variable
 data$BI <- rowMeans(data[,13:17])
 data$PE <- rowMeans(data[,21:26])
 data$PU <- rowMeans(data[,27:32])
-data$VU <- rowMeans(data[,33:35])
+data$VU <- rowMeans(data[,c(34,35,37)]) # use reworked variable
+data$AU <- rowMeans(data[,9:11])
 head(data)
 ```
+
+## Hypothesis 2: Voluntariness
+
 Now I will plot the voluntariness of Moodle.
 ```{r}
 # use pacman to manage packages
@@ -108,11 +137,10 @@ p_load(RColorBrewer, # color pallets
        moments,       # for calculating skeweness
        scales,
        car,
-       ggpubr
+       ggpubr,
+       e1071
        )
 ```
-
-## Hypothesis 2: Voluntariness
 
 ```{r voluntariness}
 # plot to show extent of voluntariness of Moodle use to determine whether AT/BI/AU are proper variables to use for statistical testing
@@ -134,7 +162,18 @@ plot_vol <- ggplot(data, aes(VU) ) +
 
 plot_vol
 ```
-Almost half of all participants say that use of Moodle is mandated, which means that for the investigation between academic discipline and technology acceptance, using the variable "actual use of Moodle" is not helpful as students can not choose to not use it. This means that high usage can't indicate high acceptance. Instead, I will use perceived ease of use and perceived usefulness. I will also not use behavioral intention to use Moodle since this too is influenced by the lack of voluntariness. 
+```{r}
+shapiro.test(data$VU) # normality cannot be assumed
+
+mean(data$VU)
+median(data$VU)
+skewness(data$VU) # symmetric enough for one-sample Wilcoxon test
+
+wilcox.test(data$VU, mu = 3, alternative = "less")
+```
+
+The p-value is lwoer than the significance level alpha of 0.05. The null hypothesis can be rejected and I can assume that the use of Moodle is mandatory for the average student at the university of Potsdam as the median of the sample is lower than 3, 3 meaning that Moodle use is neither mandatory nor voluntary and a lower number meaning that Moodle use is mandatory.
+This means that for the investigation between academic discipline and technology acceptance, using the variable "actual use of Moodle" is not helpful as students can not choose to not use it. This means that high usage can't indicate high acceptance. Instead, I will use perceived ease of use and perceived usefulness. I will also not use behavioral intention to use Moodle since this too is influenced by the lack of voluntariness. 
 
 ## Hypothesis 1: Perceived Ease of Use and Perceived Usefulness
 
@@ -373,7 +412,7 @@ This is from here: http://www.sthda.com/english/wiki/one-way-anova-test-in-r
 ## Descriptive Statistics
 
 ```{r}
-summary(data[c("AD01","AD02","AD03","DE02","DE03","AT","BI","PE","PU","VU")])
+summary(data[c("AD01","AD02","AD03","DE02","DE03","AT","BI","PE","PU","VU","AU")])
 ```
 
 ## Hypothesis 2: Voluntariness (cont.)
